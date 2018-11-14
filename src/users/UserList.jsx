@@ -12,9 +12,8 @@ class _UserList extends React.Component {
         console.log('props', this.props);
 
         return (
-            <div>
+           <div>
                 <h2>User list</h2>
-                <UserForm />
                 <ul>
                     {list && list.map(user => (
                         <User

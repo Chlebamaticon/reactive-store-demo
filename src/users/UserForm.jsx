@@ -20,7 +20,7 @@ class _UserForm extends React.Component {
 
         if(!this.state.name || !this.state.email)
             return;
-        // todo po wykonaniu jakiejkolwiek akcji an storze ten kompoennt montuje sie od nowa
+
         addUser(this.state);
 
         this.setState({ ...this.defaultState });

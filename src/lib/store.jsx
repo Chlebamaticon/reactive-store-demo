@@ -1,145 +1,123 @@
 /* eslint-disable */
 
-import React, { PureComponent } from 'react';
+import React, {PureComponent} from 'react';
 import {Subject} from "rxjs";
 import {of} from "rxjs";
 import {publishReplay, refCount, merge, scan, map, skip} from "rxjs/operators";
-import {createContext} from "react";
 
-export function createStoreContext({actions, state$}) {
-    const allMergedActions = Object.entries(actions)
-        .reduce((acc, [key, value]) => ({
-            ...acc,
-            [key]: value
-        }), {});
+class Prevent extends PureComponent {
+  render() {
+    const {renderComponent, ...rest} = this.props;
+    return renderComponent(rest);
+  }
+}
 
-    const {Consumer, Provider} = createContext({
-        actions: allMergedActions,
-        state$
-    });
+export function createStoreContext({actions: rxActions, state$}) {
+  const actions = Object.entries(rxActions)
+    .reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: value
+    }), {});
 
-    const defaultStateSelector = () => ({});
-    const defaultActionsSelector = actions => actions;
+  const defaultStateSelector = () => ({});
+  const defaultActionsSelector = actions => actions;
 
-    const withStore = (selector = defaultStateSelector, actionsSelector = defaultActionsSelector) => (DecoratedComponent) => (props = {}) => {
-        class X extends PureComponent {
-            render() {
-                return <DecoratedComponent {...this.props} />
-            }
-        }
+  const withStore = (selector = defaultStateSelector, actionsSelector = defaultActionsSelector) => (WrappedComponent) => {
+    const renderComponent = props => <WrappedComponent {...props} />;
 
-        class WithStore extends PureComponent {
-            componentDidMount() {
-                const {ctxState: { state$, actions }} = this.props;
+    class WithStore extends PureComponent {
+      static displayName = `Connect(${WrappedComponent.displayName || WrappedComponent.name || 'Unknown'})`;
 
-                // this.subscription = state$.pipe(map(selector)).subscribe(console.log);
-                this.subscription = state$.pipe(map(selector)).subscribe(this.setState.bind(this));
-                this.actions = actionsSelector(actions);
-            }
+      componentDidMount() {
+        this.subscription = state$.pipe(map(selector)).subscribe(this.setState.bind(this));
+        this.actions = actionsSelector(actions);
+      }
 
-            componentWillUnmount() {
-                this.subscription.unsubscribe();
-            }
+      componentWillUnmount() {
+        this.subscription.unsubscribe();
+      }
 
-            render() {
-                return <X {...this.state} {...this.actions} {...props} />;
-            }
-        }
-
+      render() {
         return (
-            <Consumer>
-                {ctxState => (<WithStore ctxState={ctxState}/>)}
-            </Consumer>
-        );
-    };
-
-    return {
-        Provider,
-        Consumer,
-        withStore
+          <Prevent
+            renderComponent={renderComponent}
+            {...this.state}
+            {...this.actions}
+            {...this.props}
+          />
+        )
+      }
     }
+
+    return WithStore;
+  };
+
+  return {withStore};
 }
 
 export function createState(storeName, initialState, actionsFactories) {
-    const actionsArr = Object
-        .entries(actionsFactories)
-        .map(([key, action]) => {
-            const subjectForAction = new Subject();
-            const actionObservable = action(subjectForAction);
+  const actionsArr = Object
+    .entries(actionsFactories)
+    .map(([key, action]) => {
+      const subjectForAction = new Subject();
+      const actionObservable = action(subjectForAction);
 
-            return { key, actionObservable };
-        });
+      return {key, actionObservable};
+    });
 
-    const actions = actionsArr.reduce((acc, val) => {
-        const { key, actionObservable } = val;
-
-        return {
-            ...acc,
-            [key]: (value) => actionObservable.next(value)
-        }
-    }, {});
-
-    const state$ = of(initialState).pipe(
-        merge(...actionsArr.map(({actionObservable}) => actionObservable)),
-        scan((state, reducerFn) => reducerFn(state)),
-    );
+  const actions = actionsArr.reduce((acc, val) => {
+    const {key, actionObservable} = val;
 
     return {
-        state$,
-        actions,
-        storeName,
-        initialState
+      ...acc,
+      [key]: (value) => actionObservable.next(value)
     }
+  }, {});
+
+  const state$ = of(initialState).pipe(
+    merge(...actionsArr.map(({actionObservable}) => actionObservable)),
+    scan((state, reducerFn) => reducerFn(state)),
+  );
+
+  return {
+    state$,
+    actions,
+    storeName,
+    initialState
+  }
 }
 
 export function createRootState(...localStates) {
-    let localStateObservers = [];
-    let rootInitialState = {};
-    let rootActions = {};
+  let localStateObservers = [];
+  let rootInitialState = {};
+  let rootActions = {};
 
-    localStates.forEach(({state$: internalState, storeName, initialState, actions}) => {
-        localStateObservers.push(internalState.pipe(
-            map(state => [storeName, state]),
-            skip(1) //skip initial values for every state
-        ));
+  localStates.forEach(({state$: internalState, storeName, initialState, actions}) => {
+    localStateObservers.push(internalState.pipe(
+      map(state => [storeName, state]),
+      skip(1) //skip initial values for every state
+    ));
 
-        rootInitialState = {
-            ...rootInitialState,
-            [storeName]: initialState
-        };
+    rootInitialState = {
+      ...rootInitialState,
+      [storeName]: initialState
+    };
 
-        rootActions = {
-            ...rootActions,
-            ...actions
-        };
-    });
+    rootActions = {
+      ...rootActions,
+      ...actions
+    };
+  });
 
-    const state$ = of(rootInitialState).pipe(
-        merge(...localStateObservers),
-        scan((state, [storeName, state2]) => ({...state, [storeName]: state2})),
-        publishReplay(1),
-        refCount()
-    );
+  const state$ = of(rootInitialState).pipe(
+    merge(...localStateObservers),
+    scan((state, [storeName, state2]) => ({...state, [storeName]: state2})),
+    publishReplay(1),
+    refCount()
+  );
 
-    return {
-        actions: rootActions,
-        state$
-    }
+  return {
+    actions: rootActions,
+    state$
+  }
 }
-
-
-//
-// //@ts-ignore all
-// window.x = x;
-//
-// //@ts-ignore all
-// const y = createRootState(x, u);
-// //@ts-ignore all
-// window.y = y;
-//
-// // x.state$.subscribe((w:any) => console.log('From one state', w));
-// y.state$.subscribe((w) => console.log('From global store', w));
-//
-// export const {
-//     withStore
-// } = createStoreContext(y);

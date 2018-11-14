@@ -1,4 +1,4 @@
-import { map, merge } from "rxjs/operators";
+import { map, merge, bufferTime } from "rxjs/operators";
 import { interval } from "rxjs";
 import { createState } from "../lib/store";
 
@@ -13,12 +13,14 @@ export const counter = createState(
 
             return subject
                 .pipe(
-                    merge(interval(1000)),
+                    merge(interval(100)),
+                    bufferTime(500),
                     map(value => (state) => {
+                      console.log(value);
 
-                        return {
+                      return {
                             ...state,
-                            counter: value,
+                            counter: value.reduce((a,v) => a+v, 0),
                         }
                     }),
                     // delay(1000)
