@@ -1,7 +1,8 @@
 /* eslint-disable */
 
 import React, { Component, PureComponent } from 'react';
-import { withStore } from '../store/index';
+import { withStore } from '../lib/store';
+import { counter, usersList } from "../store/index";
 
 class Test extends PureComponent {
   componentDidMount() {
@@ -17,8 +18,11 @@ class Test extends PureComponent {
   }
 }
 
-// const TestC = Test;
-const TestC = withStore(({ users: { list } }) => ({list}))(Test);
+const TestC = withStore(usersList, counter)((store) => {
+  const { users: { list } } = store;
+
+  return ({list})
+})(Test);
 
 export function _Counter({counter}) {
     return (
@@ -26,7 +30,6 @@ export function _Counter({counter}) {
             <p>Counter value: </p>
             <h3>{ counter }</h3>
           <TestC />
-
         </div>
     );
 }
@@ -64,5 +67,5 @@ class _C extends React.Component{
     }
 }
 
-export const Counter = withStore(({counter: { counter }}) => ({counter}))(_C);
+export const Counter = withStore(counter)(({counter: { counter }}) => ({counter}))(_C);
 // export const Counter = _C;

@@ -1,4 +1,6 @@
-import { map, merge, bufferTime } from "rxjs/operators";
+/* eslint-disable */
+
+import {map, merge, bufferTime, publishReplay, refCount} from "rxjs/operators";
 import { interval } from "rxjs";
 import { createState } from "../lib/store";
 
@@ -10,21 +12,19 @@ export const counter = createState(
     },
     {
         increment(subject) {
-
-            return subject
+          return subject
                 .pipe(
                     merge(interval(100)),
                     bufferTime(500),
-                    map(value => (state) => {
-                      console.log(value);
-
+                    map((value = []) => (state) => {
                       return {
                             ...state,
                             counter: value.reduce((a,v) => a+v, 0),
                         }
                     }),
-                    // delay(1000)
                 )
         }
     }
 );
+
+console.log('counter', counter);

@@ -1,15 +1,13 @@
 /* eslint-disable */
 import * as React from 'react';
-import { withStore } from '../store/index';
+import { withStore } from '../lib/store';
+import { usersList } from "../store";
 import { User } from "./User";
-import { UserForm } from "./UserForm";
 
 class _UserList extends React.Component {
 
     render() {
         const { list, removeUser } = this.props;
-
-        console.log('props', this.props);
 
         return (
            <div>
@@ -28,5 +26,4 @@ class _UserList extends React.Component {
     }
 }
 
-// export const UserList = _UserList;
-export const UserList = withStore(({ users: { list } }) => ({list}))(_UserList);
+export const UserList = withStore(usersList)(({ users: { list } }) => ({list}))(_UserList);

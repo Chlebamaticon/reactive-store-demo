@@ -1,6 +1,7 @@
 /* eslint-disable */
 import * as React from 'react';
-import { withStore } from '../store/index';
+import { withStore } from '../lib/store';
+import { usersList } from "../store/index";
 
 class _UserForm extends React.Component {
     constructor(props) {
@@ -54,4 +55,4 @@ class _UserForm extends React.Component {
 }
 
 // export const UserList = _UserList;
-export const UserForm = withStore()(_UserForm);
+export const UserForm = withStore(usersList)()(_UserForm);

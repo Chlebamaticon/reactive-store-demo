@@ -12,7 +12,11 @@ class Prevent extends PureComponent {
   }
 }
 
-export function createStoreContext({actions: rxActions, state$}) {
+export function withStore(...localStates) {
+  return createStoreConnectComponent(createRootState(...localStates));
+}
+
+export function createStoreConnectComponent({actions: rxActions, state$}) {
   const actions = Object.entries(rxActions)
     .reduce((acc, [key, value]) => ({
       ...acc,
@@ -22,7 +26,7 @@ export function createStoreContext({actions: rxActions, state$}) {
   const defaultStateSelector = () => ({});
   const defaultActionsSelector = actions => actions;
 
-  const withStore = (selector = defaultStateSelector, actionsSelector = defaultActionsSelector) => (WrappedComponent) => {
+  return (selector = defaultStateSelector, actionsSelector = defaultActionsSelector) => (WrappedComponent) => {
     const renderComponent = props => <WrappedComponent {...props} />;
 
     class WithStore extends PureComponent {
@@ -51,8 +55,6 @@ export function createStoreContext({actions: rxActions, state$}) {
 
     return WithStore;
   };
-
-  return {withStore};
 }
 
 export function createState(storeName, initialState, actionsFactories) {
@@ -70,13 +72,17 @@ export function createState(storeName, initialState, actionsFactories) {
 
     return {
       ...acc,
-      [key]: (value) => actionObservable.next(value)
+      [key]: (value) => {
+        return actionObservable.next(value);
+      }
     }
   }, {});
 
   const state$ = of(initialState).pipe(
     merge(...actionsArr.map(({actionObservable}) => actionObservable)),
     scan((state, reducerFn) => reducerFn(state)),
+    publishReplay(1),
+    refCount(),
   );
 
   return {
