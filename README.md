@@ -3,8 +3,16 @@
 Store for React which uses RxJS
 
 Project launch
+
+Development
 ```bash
 npm run start
+```
+
+Prod from build
+```bash
+npm install -g serve # if needed
+serve -s build
 ```
 
 ### NPM
@@ -36,7 +44,7 @@ export const counter = createState(
           merge(interval(1000)),
           map((value) => (state) => ({
                   ...state,
-                  counter: state.value + value,
+                  counter: state.counter + value,
               }
             )
           ),
