@@ -23,7 +23,7 @@ export function createStoreConnectComponent({actions: rxActions, state$}) {
       [key]: value
     }), {});
 
-  const defaultStateSelector = () => ({});
+  const defaultStateSelector = state => state;
   const defaultActionsSelector = actions => actions;
 
   return (selector = defaultStateSelector, actionsSelector = defaultActionsSelector) => (WrappedComponent) => {
@@ -57,7 +57,7 @@ export function createStoreConnectComponent({actions: rxActions, state$}) {
   };
 }
 
-export function createState(storeName, initialState, actionsFactories) {
+export function createState(initialState, actionsFactories) {
   const actionsArr = Object
     .entries(actionsFactories)
     .map(([key, action]) => {
@@ -88,7 +88,6 @@ export function createState(storeName, initialState, actionsFactories) {
   return {
     state$,
     actions,
-    storeName,
     initialState
   }
 }
@@ -98,15 +97,14 @@ export function createRootState(...localStates) {
   let rootInitialState = {};
   let rootActions = {};
 
-  localStates.forEach(({state$: internalState, storeName, initialState, actions}) => {
+  localStates.forEach(({state$: internalState, initialState, actions}) => {
     localStateObservers.push(internalState.pipe(
-      map(state => [storeName, state]),
       skip(1) //skip initial values for every state
     ));
 
     rootInitialState = {
       ...rootInitialState,
-      [storeName]: initialState
+      ...initialState
     };
 
     rootActions = {
@@ -117,7 +115,7 @@ export function createRootState(...localStates) {
 
   const state$ = of(rootInitialState).pipe(
     merge(...localStateObservers),
-    scan((state, [storeName, state2]) => ({...state, [storeName]: state2})),
+    scan((oldState, newState) => ({...oldState, ...newState})),
     publishReplay(1),
     refCount()
   );

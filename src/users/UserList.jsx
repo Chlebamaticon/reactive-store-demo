@@ -26,4 +26,8 @@ class _UserList extends React.Component {
     }
 }
 
-export const UserList = withStore(usersList)(({ users: { list } }) => ({list}))(_UserList);
+export const UserList = withStore(usersList)(state => {
+  console.log('UserList -> withStore -> state', state);
+
+  return state;
+})(_UserList);

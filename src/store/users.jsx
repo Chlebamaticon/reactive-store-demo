@@ -2,7 +2,6 @@ import { map } from "rxjs/operators";
 import { createState } from "../lib/store";
 
 export const usersList = createState(
-    'users',
     {
         list: [
             {

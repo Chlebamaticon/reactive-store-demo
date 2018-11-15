@@ -5,7 +5,6 @@ import { interval } from "rxjs";
 import { createState } from "../lib/store";
 
 export const counter = createState(
-    'counter',
     {
         counter: 0,
         val: 'abc'

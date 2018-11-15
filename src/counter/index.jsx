@@ -18,10 +18,10 @@ class Test extends PureComponent {
   }
 }
 
-const TestC = withStore(usersList, counter)((store) => {
-  const { users: { list } } = store;
+const TestC = withStore(usersList, counter)(state => {
+  console.log(state);
 
-  return ({list})
+  return state;
 })(Test);
 
 export function _Counter({counter}) {
@@ -67,5 +67,5 @@ class _C extends React.Component{
     }
 }
 
-export const Counter = withStore(counter)(({counter: { counter }}) => ({counter}))(_C);
+export const Counter = withStore(counter)()(_C);
 // export const Counter = _C;
