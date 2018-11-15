@@ -18,11 +18,7 @@ class Test extends PureComponent {
   }
 }
 
-const TestC = withStore(usersList, counter)(state => {
-  console.log(state);
-
-  return state;
-})(Test);
+const TestC = withStore(usersList)()(Test);
 
 export function _Counter({counter}) {
     return (

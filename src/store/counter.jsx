@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import {map, merge, bufferTime, publishReplay, refCount} from "rxjs/operators";
+import {map, merge, bufferTime} from "rxjs/operators";
 import { interval } from "rxjs";
 import { createState } from "../lib/store";
 

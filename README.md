@@ -1,44 +1,81 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Reactive store
 
-## Available Scripts
+Store for React which uses RxJS
 
-In the project directory, you can run:
+Project launch
+```bash
+npm run start
+```
 
-### `npm start`
+### NPM
+not yet on npm :)
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Simple case study:
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+State creation:
+```jsx harmony
+// file: counterState.jsx
+import { map, merge, bufferTime } from "rxjs/operators";
+import { interval } from "rxjs";
+import { createState } from "../lib/store";
 
-### `npm test`
+export const counter = createState(
+  // first argument - initial state
+  {
+      counter: 0
+  },
+  // second - actions, all in state scope. Every action gets own, custom
+  // subject in first param and every action needs to return Observable.
+  // Real action exists in `map`, it gets value passed during call and 
+  // must return second function which will get in first param current state
+  // and return new one.
+  {
+    increment: (subject) => 
+      subject
+        .pipe(
+          merge(interval(1000)),
+          map((value) => (state) => ({
+                  ...state,
+                  counter: state.value + value,
+              }
+            )
+          ),
+        )
+  }
+);
+``` 
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+How to connect component and state:
+```jsx harmony
+// file: Counter.jsx
+import { counter } from 'counterState.jsx'; 
 
-### `npm run build`
+export function _Counter({ counter, increment }) {
+  // increment(value) is action from our state and it is equal to
+  // call next(value)  on action subject
+  const onClick = () => increment(counter + 10);
+  
+  return (
+    <div>
+      <p>Counter value: </p>
+      <h3>{ counter }</h3>
+      <button onClick={onClick}>Add 10 to counter</button>
+    </div>
+  );
+}
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+export const Counter = withStore(counter)(state => {
+  // state === state declared in store, you can pass many stores like 
+  // withStore(counter, users, ...etc) all their actions and fields will
+  // be available in connected component props. 
+  
+  // if you just return the same state without mutating like me then 
+  // leave call empty - withStore(counter)()(_Counter); which is equal 
+  // to state => state.
+  return state;
+}, actions => {
+  // second functions can mutate actions from stores, same as state, if you
+  // leave empty call it means "return all actions under the same names".
+  return actions;
+})(_Counter);
+```
